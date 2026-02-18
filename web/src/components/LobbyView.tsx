@@ -6,6 +6,17 @@ interface Props {
   state: UIState;
 }
 
+function toReadableError(error?: string): string {
+  if (!error) return '요청 처리에 실패했습니다.';
+  if (error.includes('session is not in LOBBY state')) {
+    return '이미 진행 중인 세션입니다. 새로고침 후 현재 화면으로 이동해 주세요.';
+  }
+  if (error.includes('demo already running')) {
+    return '데모가 이미 실행 중입니다. 잠시 후 다시 확인해 주세요.';
+  }
+  return error;
+}
+
 export default function LobbyView({ state }: Props) {
   const { lobby, session } = state;
   const [loading, setLoading] = useState(false);
@@ -15,9 +26,12 @@ export default function LobbyView({ state }: Props) {
   const handleDemo = async () => {
     setLoading(true);
     setError(null);
-    const result = await startDemo();
-    if (!result.ok) {
-      setError(result.error || 'Failed to start demo');
+    try {
+      const result = await startDemo();
+      if (!result.ok) {
+        setError(toReadableError(result.error));
+      }
+    } finally {
       setLoading(false);
     }
   };
@@ -25,9 +39,12 @@ export default function LobbyView({ state }: Props) {
   const handleRoguelike = async () => {
     setLoadingRL(true);
     setError(null);
-    const result = await startRoguelike();
-    if (!result.ok) {
-      setError(result.error || 'Failed to start roguelike');
+    try {
+      const result = await startRoguelike();
+      if (!result.ok) {
+        setError(toReadableError(result.error));
+      }
+    } finally {
       setLoadingRL(false);
     }
   };

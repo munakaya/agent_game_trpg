@@ -189,7 +189,7 @@ export default function ReplayPage() {
 
         <div className="main-panel">
           <MapView
-            state={state}
+            mapState={state.map.mapState}
             activeAnimations={activeAnimations}
             damageNumbers={damageNumbers}
             projectiles={projectiles}

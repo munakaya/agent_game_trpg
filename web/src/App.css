@@ -221,6 +221,9 @@ a {
 .chat-log {
   flex: 1;
   padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
   overflow-y: auto;
   font-size: 14px;
   line-height: 1.6;
@@ -245,6 +248,14 @@ a {
 .chat-streaming {
   color: #64748b;
   font-style: italic;
+  margin-bottom: 0;
+}
+
+.chat-streaming-dock {
+  position: sticky;
+  bottom: 0;
+  padding-top: 8px;
+  background: linear-gradient(180deg, rgba(245, 247, 251, 0), rgba(245, 247, 251, 0.92) 35%);
 }
 
 .chat-combat {

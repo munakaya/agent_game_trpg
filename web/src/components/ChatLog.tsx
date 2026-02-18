@@ -7,14 +7,22 @@ interface Props {
 
 export default function ChatLog({ state }: Props) {
   const { messages, streaming } = state.chat;
+  const containerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages.length, Object.keys(streaming).length]);
+    // 채팅형 UX: 새 메시지가 들어오면 항상 하단 고정
+    const id = requestAnimationFrame(() => {
+      const el = containerRef.current;
+      if (!el) return;
+      el.scrollTop = el.scrollHeight;
+      bottomRef.current?.scrollIntoView({ block: 'end' });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [messages, streaming]);
 
   return (
-    <div className="chat-log">
+    <div className="chat-log" ref={containerRef}>
       {messages.map((msg) => {
         if (msg.speaker.type === 'COMBAT') {
           const isHeal = msg.text.startsWith('💚');
@@ -36,11 +44,15 @@ export default function ChatLog({ state }: Props) {
         );
       })}
 
-      {Object.entries(streaming).map(([id]) => (
-        <div key={id} className="chat-msg chat-streaming">
-          <span>응답 생성 중…</span>
+      {Object.entries(streaming).length > 0 && (
+        <div className="chat-streaming-dock">
+          {Object.entries(streaming).map(([id]) => (
+            <div key={id} className="chat-msg chat-streaming">
+              <span>응답 생성 중…</span>
+            </div>
+          ))}
         </div>
-      ))}
+      )}
 
       <div ref={bottomRef} />
     </div>

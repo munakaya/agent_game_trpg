@@ -7,6 +7,7 @@ interface Props {
 
 export default function ChatLog({ state }: Props) {
   const { messages, streaming } = state.chat;
+  const streamingEntries = Object.entries(streaming);
   const containerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -44,11 +45,12 @@ export default function ChatLog({ state }: Props) {
         );
       })}
 
-      {Object.entries(streaming).length > 0 && (
-        <div className="chat-streaming-dock">
-          {Object.entries(streaming).map(([id]) => (
+      {streamingEntries.length > 0 && (
+        <div className="chat-streaming-dock" aria-live="polite">
+          {streamingEntries.map(([id, text]) => (
             <div key={id} className="chat-msg chat-streaming">
-              <span>응답 생성 중…</span>
+              <span className="chat-speaker DM">DM</span>
+              <span>{text || '응답 생성 중…'}</span>
             </div>
           ))}
         </div>

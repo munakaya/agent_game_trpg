@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.venv/
+.env
+.env.*
+!.env.sample
+.tmp/
+.tmp/db_report/
+server/data/
+logs/
+*.log

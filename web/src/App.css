@@ -1124,6 +1124,104 @@ a {
   height: 100%;
 }
 
+/* Action trails: clearly show start/end of move & attack */
+.action-trail {
+  position: absolute;
+  height: 2px;
+  transform-origin: left center;
+  pointer-events: none;
+  z-index: 46;
+  animation: actionTrailFade 420ms ease-out forwards;
+}
+
+.action-trail-line {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+}
+
+.action-trail-start,
+.action-trail-end {
+  position: absolute;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+}
+
+.action-trail-start { left: 0; }
+.action-trail-end { left: 100%; }
+
+.action-trail.move .action-trail-line {
+  background: linear-gradient(90deg, rgba(86, 212, 255, 0.95) 0%, rgba(66, 173, 224, 0.08) 100%);
+  box-shadow: 0 0 8px rgba(64, 203, 255, 0.65);
+}
+
+.action-trail.move .action-trail-start,
+.action-trail.move .action-trail-end {
+  background: #5de2ff;
+  box-shadow: 0 0 10px rgba(93, 226, 255, 0.7);
+}
+
+.action-trail.attack .action-trail-line {
+  height: 3px;
+  background: linear-gradient(90deg, rgba(255, 139, 139, 0.95) 0%, rgba(255, 106, 106, 0.08) 100%);
+  box-shadow: 0 0 9px rgba(255, 120, 120, 0.72);
+}
+
+.action-trail.attack .action-trail-start,
+.action-trail.attack .action-trail-end {
+  width: 10px;
+  height: 10px;
+  background: #ff8c95;
+  box-shadow: 0 0 10px rgba(255, 140, 149, 0.82);
+}
+
+.action-trail.projectile .action-trail-line {
+  background: linear-gradient(90deg, rgba(255, 216, 123, 0.95) 0%, rgba(255, 181, 79, 0.08) 100%);
+  box-shadow: 0 0 8px rgba(255, 202, 106, 0.7);
+}
+
+.action-trail.projectile .action-trail-start,
+.action-trail.projectile .action-trail-end {
+  background: #ffd37b;
+  box-shadow: 0 0 10px rgba(255, 211, 123, 0.75);
+}
+
+.action-mark {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 47;
+  animation: actionMarkPulse 360ms ease-out;
+}
+
+.action-mark.source {
+  border: 2px solid rgba(84, 213, 255, 0.9);
+  box-shadow: 0 0 10px rgba(84, 213, 255, 0.6);
+}
+
+.action-mark.target {
+  border: 2px solid rgba(255, 126, 136, 0.95);
+  box-shadow: 0 0 12px rgba(255, 126, 136, 0.65);
+}
+
+@keyframes actionTrailFade {
+  0% { opacity: 0.95; }
+  100% { opacity: 0; }
+}
+
+@keyframes actionMarkPulse {
+  0% { opacity: 0.95; transform: translate(-50%, -50%) scale(0.7); }
+  60% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.32); }
+}
+
 .token-absolute {
   position: absolute;
   will-change: transform;

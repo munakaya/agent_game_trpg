@@ -35,6 +35,22 @@ interface Props {
   isHitStop?: boolean;
 }
 
+interface ActionTrail {
+  id: string;
+  kind: 'move' | 'attack' | 'projectile';
+  fromX: number;
+  fromY: number;
+  toX: number;
+  toY: number;
+}
+
+interface FocusMark {
+  id: string;
+  kind: 'source' | 'target';
+  x: number;
+  y: number;
+}
+
 function tileStyle(ch: string, hasExit: boolean, hasItem: boolean): { fill: number; border: number } {
   if (hasExit) return { fill: 0x0f4f2a, border: 0x2a8f55 };
   if (hasItem || ch === 'I') return { fill: 0x193428, border: 0x2a5a44 };
@@ -176,6 +192,7 @@ function MapView({
   const tileLayerRef = useRef<Container | null>(null);
   const tokenLayerRef = useRef<Container | null>(null);
   const textureCacheRef = useRef<Map<string, Texture>>(new Map());
+  const prevTokenPosRef = useRef<Map<string, { x: number; y: number }>>(new Map());
   const cellSize = 42;
   const rows = ms?.rows ?? [];
   const tokens = ms?.tokens ?? [];
@@ -193,6 +210,78 @@ function MapView({
   const slashes = slashEffects || [];
   const impacts = impactEffects || [];
   const camera = cameraEffect || {};
+
+  const actionTrails = useMemo<ActionTrail[]>(() => {
+    const trails: ActionTrail[] = [];
+    const prevPos = prevTokenPosRef.current;
+
+    for (const token of tokens) {
+      const anim = animations.get(token.id);
+      if (!anim) continue;
+
+      if (anim.type === 'move') {
+        const from = prevPos.get(token.id);
+        if (from && (from.x !== token.x || from.y !== token.y)) {
+          trails.push({
+            id: `move-${token.id}`,
+            kind: 'move',
+            fromX: from.x * cellSize + cellSize / 2,
+            fromY: from.y * cellSize + cellSize / 2,
+            toX: token.x * cellSize + cellSize / 2,
+            toY: token.y * cellSize + cellSize / 2,
+          });
+        }
+      }
+
+      if (anim.type === 'attack' && anim.target) {
+        trails.push({
+          id: `attack-${token.id}`,
+          kind: 'attack',
+          fromX: token.x * cellSize + cellSize / 2,
+          fromY: token.y * cellSize + cellSize / 2,
+          toX: anim.target.x * cellSize + cellSize / 2,
+          toY: anim.target.y * cellSize + cellSize / 2,
+        });
+      }
+    }
+
+    for (const proj of projs) {
+      trails.push({
+        id: `proj-${proj.id}`,
+        kind: 'projectile',
+        fromX: proj.fromX,
+        fromY: proj.fromY,
+        toX: proj.toX,
+        toY: proj.toY,
+      });
+    }
+
+    return trails;
+  }, [animations, cellSize, projs, tokens]);
+
+  const focusMarks = useMemo<FocusMark[]>(() => {
+    const marks: FocusMark[] = [];
+
+    for (const token of tokens) {
+      const anim = animations.get(token.id);
+      if (anim?.type === 'attack' && anim.target) {
+        marks.push({
+          id: `src-${token.id}`,
+          kind: 'source',
+          x: token.x * cellSize + cellSize / 2,
+          y: token.y * cellSize + cellSize / 2,
+        });
+        marks.push({
+          id: `tgt-${token.id}`,
+          kind: 'target',
+          x: anim.target.x * cellSize + cellSize / 2,
+          y: anim.target.y * cellSize + cellSize / 2,
+        });
+      }
+    }
+
+    return marks;
+  }, [animations, cellSize, tokens]);
 
   const poiMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -383,6 +472,14 @@ function MapView({
     }
   }, [animations, cellSize, hasMap, tokens]);
 
+  useEffect(() => {
+    const next = new Map<string, { x: number; y: number }>();
+    for (const token of tokens) {
+      next.set(token.id, { x: token.x, y: token.y });
+    }
+    prevTokenPosRef.current = next;
+  }, [tokens]);
+
   if (!hasMap) {
     return <div className="map-container" style={{ color: '#555', textAlign: 'center', padding: 40 }}>Map not loaded</div>;
   }
@@ -406,6 +503,37 @@ function MapView({
             height: mapHeight,
           }}
         >
+          {actionTrails.map((trail) => {
+            const dx = trail.toX - trail.fromX;
+            const dy = trail.toY - trail.fromY;
+            const length = Math.hypot(dx, dy);
+            if (length < 1) return null;
+
+            const angleDeg = (Math.atan2(dy, dx) * 180) / Math.PI;
+            const style: CSSProperties = {
+              left: trail.fromX,
+              top: trail.fromY,
+              width: length,
+              transform: `translateY(-50%) rotate(${angleDeg}deg)`,
+            };
+
+            return (
+              <div key={trail.id} className={`action-trail ${trail.kind}`} style={style}>
+                <span className="action-trail-line" />
+                <span className="action-trail-start" />
+                <span className="action-trail-end" />
+              </div>
+            );
+          })}
+
+          {focusMarks.map((mark) => (
+            <span
+              key={mark.id}
+              className={`action-mark ${mark.kind}`}
+              style={{ left: mark.x, top: mark.y }}
+            />
+          ))}
+
           {damages.map((dmg) => (
             <DamageNumber
               key={dmg.id}

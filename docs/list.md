@@ -1,0 +1,14 @@
+- api.md: 백엔드 API 엔드포인트와 요청/응답 구조를 정리한 문서.
+- audio_assets.md: CC0 배경음/효과음 소스, 저장 경로, 런타임 매핑 구조를 정리한 문서.
+- dice_replay_consistency.md: 주사위/리플레이 일관성 요구사항과 검증 포인트를 정리한 문서.
+- enemy_npc.md: 적/중립 NPC 동작 규칙과 설계 메모를 정리한 문서.
+- folder_structure.md: 권장 디렉토리 구조와 모듈 역할을 요약한 문서.
+- frontend_reducers_pseudocode.md: 프론트 상태 리듀서 흐름을 의사코드로 정리한 문서.
+- implementation_plan.md: 기능 구현 순서와 단계별 계획을 기록한 문서.
+- integrated_guidelines.md: 실행/정리/로그/포트/테스트 통합 지침 적용 요약 문서.
+- live_replay_integration.md: 라이브/리플레이 통합 처리 방식과 고려사항을 정리한 문서.
+- replay_engine.md: 리플레이 엔진 동작 원리와 데이터 흐름을 설명한 문서.
+- rules.md: 게임 룰(전투/턴/판정 등) 핵심 규칙을 정리한 문서.
+- safety_filter.md: 안전 필터 정책과 이벤트 차단 기준을 다룬 문서.
+- server_pseudocode.md: 서버 핵심 루프/핸들러 로직 의사코드를 정리한 문서.
+- server_validation_pseudocode.md: 서버 검증 로직과 예외 처리 의사코드를 정리한 문서.

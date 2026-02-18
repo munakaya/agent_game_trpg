@@ -60,10 +60,15 @@ export default function LivePage() {
     return () => clearInterval(iv);
   }, [state.session.state, state.session.startedAt]);
 
-  const isLobby = !state.session.state || state.session.state === 'LOBBY';
+  const isBootstrapping = !state.session.state && state.meta.lastSeq === 0;
+  const isLobby = state.session.state === 'LOBBY';
   const isEnded = state.session.state === 'ENDED';
   const isRoguelike = state.session.isRoguelike;
   const runEnd = state.roguelike.runEnd;
+
+  if (isBootstrapping) {
+    return <div className="archive-empty">세션 연결 중입니다…</div>;
+  }
 
   return (
     <div>

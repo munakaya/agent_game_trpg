@@ -29,12 +29,43 @@ PREV_LOCAL_LLM_HOST=""
 PREV_LOCAL_LLM_PORT=""
 VERSION=""
 RUN_LOG=""
+USE_COLOR=0
+C_RESET=""
+C_BOLD=""
+C_GREEN=""
+C_CYAN=""
+C_YELLOW=""
 
 trim() {
   local s="$1"
   s="${s#${s%%[![:space:]]*}}"
   s="${s%${s##*[![:space:]]}}"
   printf '%s' "$s"
+}
+
+init_colors() {
+  if [ "${RUN_NO_PROMPT:-0}" = "1" ] || [ -n "${NO_COLOR:-}" ]; then
+    return
+  fi
+
+  if [ -t 1 ] || [ -t 2 ]; then
+    USE_COLOR=1
+    C_RESET=$'\033[0m'
+    C_BOLD=$'\033[1m'
+    C_GREEN=$'\033[32m'
+    C_CYAN=$'\033[36m'
+    C_YELLOW=$'\033[33m'
+  fi
+}
+
+style_text() {
+  local style="$1"
+  local text="$2"
+  if [ "$USE_COLOR" -eq 1 ]; then
+    printf '%b%s%b' "$style" "$text" "$C_RESET"
+  else
+    printf '%s' "$text"
+  fi
 }
 
 print_banner() {
@@ -64,6 +95,7 @@ print_runtime_panel() {
   printf "║  Log       %-42s║\n" "$log_short"
   echo "║  종료      Ctrl+C                                    ║"
   echo "╚══════════════════════════════════════════════════════╝"
+  echo "  $(style_text "${C_BOLD}${C_CYAN}" "WEB: ${app_url}  <- 브라우저 접속")"
 }
 
 kill_tree() {
@@ -275,18 +307,19 @@ choose_value() {
     local option="${options[$i]}"
     local marker=""
     if [ "$option" = "$default_value" ]; then
-      marker="${marker}  [기본값]"
+      marker="${marker}  $(style_text "${C_BOLD}${C_GREEN}" "[기본값: Enter]")"
     fi
     if [ -n "$previous_value" ] && [ "$option" = "$previous_value" ]; then
-      marker="${marker}  ← 이전 선택"
+      marker="${marker}  $(style_text "${C_BOLD}${C_YELLOW}" "← 이전 선택")"
     fi
     printf "    %d)  %s%s\n" "$((i + 1))" "$option" "$marker" >&2
   done
   echo "    0)  직접 입력" >&2
+  echo "    $(style_text "${C_BOLD}${C_GREEN}" "Enter만 누르면 ${default_value} 사용")" >&2
   echo "" >&2
 
   local choice
-  read -r -p "    ${prompt_label} (Enter=${default_value}): " choice
+  read -r -p "    ${prompt_label} (Enter=$(style_text "${C_BOLD}${C_GREEN}" "$default_value")): " choice
   choice="$(trim "${choice:-}")"
 
   if [ -z "$choice" ]; then
@@ -296,7 +329,7 @@ choose_value() {
 
   if [ "$choice" = "0" ]; then
     local typed
-    read -r -p "    ${label} 직접 입력 (Enter=${default_value}): " typed
+    read -r -p "    ${label} 직접 입력 (Enter=$(style_text "${C_BOLD}${C_GREEN}" "$default_value")): " typed
     typed="${typed:-$default_value}"
     printf '%s' "$(trim "$typed")"
     return
@@ -514,6 +547,7 @@ on_exit() {
 }
 
 mkdir -p "$TMP_DIR" "$LOG_DIR"
+init_colors
 
 VERSION="$(validate_version)"
 RUN_LOG="$LOG_DIR/$(date '+%Y-%m-%d_%H%M%S').log"
@@ -586,6 +620,7 @@ save_defaults
 echo ""
 echo "    ✔  호스트:   ${APP_HOST}"
 echo "    ✔  Web App:  http://${APP_HOST}:${APP_PORT}"
+echo "    $(style_text "${C_BOLD}${C_CYAN}" "WEB: http://${APP_HOST}:${APP_PORT}  <- 브라우저 접속")"
 if [ "$APP_HOST" = "0.0.0.0" ]; then
   echo "    ✔  Local:    http://127.0.0.1:${APP_PORT}"
 fi
@@ -621,7 +656,8 @@ fi
 echo ""
 echo "=== TRPG server running ==="
 echo "  PID  : $SERVER_PID"
-echo "  URL  : http://$APP_HOST:$APP_PORT"
+echo "  URL  : $(style_text "${C_BOLD}${C_CYAN}" "http://$APP_HOST:$APP_PORT")"
+echo "  $(style_text "${C_BOLD}${C_CYAN}" "WEB: http://$APP_HOST:$APP_PORT  <- 브라우저 접속")"
 if [ "$APP_HOST" = "0.0.0.0" ]; then
   echo "  Local: http://127.0.0.1:$APP_PORT"
 fi

@@ -1,4 +1,5 @@
 - api.md: 백엔드 API 엔드포인트와 요청/응답 구조를 정리한 문서.
+- agent_skills.md: skill-md/v1 스킬 파일 포맷, 로더, API, 런타임 주입 방식을 정리한 문서.
 - audio_assets.md: CC0 배경음/효과음 소스, 저장 경로, 런타임 매핑 구조를 정리한 문서.
 - dice_replay_consistency.md: 주사위/리플레이 일관성 요구사항과 검증 포인트를 정리한 문서.
 - enemy_npc.md: 적/중립 NPC 동작 규칙과 설계 메모를 정리한 문서.

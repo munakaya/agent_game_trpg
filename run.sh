@@ -7,6 +7,7 @@ ENV_SAMPLE_FILE="$DIR/.env.sample"
 TMP_DIR="$DIR/.tmp"
 RUN_JSON="$TMP_DIR/run.json"
 DEFAULTS_FILE="$TMP_DIR/last_selection.env"
+DEFAULTS_FILE_AUTO="$TMP_DIR/last_selection.auto.env"
 LOG_DIR="$DIR/logs"
 VERSION_FILE="$DIR/VERSION"
 
@@ -41,6 +42,40 @@ trim() {
   s="${s#${s%%[![:space:]]*}}"
   s="${s%${s##*[![:space:]]}}"
   printf '%s' "$s"
+}
+
+is_non_interactive() {
+  [ "${RUN_NO_PROMPT:-0}" = "1" ] || [ ! -t 0 ]
+}
+
+resolve_defaults_file_for_load() {
+  # 사용자 실행 기본값(.tmp/last_selection.env)을 우선 사용한다.
+  # 비대화형 실행은 사용자 파일이 없을 때만 auto 파일을 사용한다.
+  if is_non_interactive; then
+    if [ -f "$DEFAULTS_FILE" ]; then
+      printf '%s' "$DEFAULTS_FILE"
+      return
+    fi
+    if [ -f "$DEFAULTS_FILE_AUTO" ]; then
+      printf '%s' "$DEFAULTS_FILE_AUTO"
+      return
+    fi
+    printf '%s' "$DEFAULTS_FILE"
+    return
+  fi
+
+  printf '%s' "$DEFAULTS_FILE"
+}
+
+resolve_defaults_file_for_save() {
+  # 사용자 TTY 실행만 사용자 기본값 파일을 갱신하고,
+  # 비대화형 실행은 auto 파일에 저장해 사용자 선택을 보존한다.
+  if is_non_interactive; then
+    printf '%s' "$DEFAULTS_FILE_AUTO"
+    return
+  fi
+
+  printf '%s' "$DEFAULTS_FILE"
 }
 
 init_colors() {
@@ -95,7 +130,6 @@ print_runtime_panel() {
   printf "║  Log       %-42s║\n" "$log_short"
   echo "║  종료      Ctrl+C                                    ║"
   echo "╚══════════════════════════════════════════════════════╝"
-  echo "  $(style_text "${C_BOLD}${C_CYAN}" "WEB: ${app_url}  <- 브라우저 접속")"
 }
 
 kill_tree() {
@@ -467,7 +501,10 @@ PY
 }
 
 save_defaults() {
-  cat > "$DEFAULTS_FILE" <<EOF_DEF
+  local defaults_target
+  defaults_target="$(resolve_defaults_file_for_save)"
+
+  cat > "$defaults_target" <<EOF_DEF
 APP_BIND_HOST=${APP_HOST}
 APP_BIND_PORT=${APP_PORT}
 LOCAL_LLM_HOST=${LOCAL_LLM_HOST}
@@ -572,9 +609,10 @@ if [ -f "$ENV_FILE" ]; then
   set +a
 fi
 
-if [ -f "$DEFAULTS_FILE" ]; then
+DEFAULTS_SOURCE_FILE="$(resolve_defaults_file_for_load)"
+if [ -f "$DEFAULTS_SOURCE_FILE" ]; then
   # shellcheck disable=SC1090
-  source "$DEFAULTS_FILE"
+  source "$DEFAULTS_SOURCE_FILE"
   PREV_APP_BIND_HOST="${APP_BIND_HOST:-}"
   PREV_APP_BIND_PORT="${APP_BIND_PORT:-}"
   PREV_LOCAL_LLM_HOST="${LOCAL_LLM_HOST:-}"

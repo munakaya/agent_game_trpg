@@ -51,67 +51,65 @@ export default function LobbyView({ state }: Props) {
 
   return (
     <div className="lobby-view">
-      <h2 className="lobby-title">{session.title || '대기 중…'}</h2>
-      <p className="lobby-subtitle">
-        에이전트가 접속하면 게임이 시작됩니다.
-      </p>
+      <span className="lobby-kicker">TACTICAL CO-OP SESSION</span>
+      <h2 className="lobby-title">{session.title || '작전 준비 중'}</h2>
+      <p className="lobby-subtitle">모드를 선택하면 전투 시뮬레이션이 즉시 시작됩니다.</p>
 
       <div className="lobby-status">
         <div className={`lobby-badge ${lobby.dmConnected ? 'ready' : 'waiting'}`}>
-          <div className="lobby-role">DM</div>
+          <div className="lobby-role">DM Link</div>
           <div className={`lobby-badge-state ${lobby.dmConnected ? 'ready' : 'waiting'}`}>
-            {lobby.dmConnected ? 'Ready' : 'Waiting...'}
+            {lobby.dmConnected ? 'ONLINE' : 'OFFLINE'}
           </div>
         </div>
 
         <div className={`lobby-badge ${(lobby.playersConnected ?? 0) >= 2 ? 'ready' : 'waiting'}`}>
-          <div className="lobby-role">Players</div>
+          <div className="lobby-role">Agents</div>
           <div className={`lobby-badge-state ${(lobby.playersConnected ?? 0) >= 2 ? 'ready' : 'waiting'}`}>
-            {lobby.playersConnected ?? 0} / 4
+            {lobby.playersConnected ?? 0} / 4 READY
           </div>
         </div>
       </div>
 
       {lobby.roleNeed && (
         <div className="lobby-role-need">
-          필요 역할:
+          <span className="lobby-role-need-label">필요 역할</span>
           {lobby.roleNeed.tank && <span className="lobby-role-chip">Tank</span>}
           {lobby.roleNeed.healer && <span className="lobby-role-chip">Healer</span>}
           {lobby.roleNeed.dps && <span className="lobby-role-chip">DPS</span>}
           {!lobby.roleNeed.tank && !lobby.roleNeed.healer && !lobby.roleNeed.dps && (
-            <span className="lobby-role-chip">All filled!</span>
+            <span className="lobby-role-chip">All filled</span>
           )}
         </div>
       )}
 
-      <div className="lobby-actions">
+      <div className="lobby-mode-grid">
         <button
           onClick={handleRoguelike}
           disabled={loadingRL || loading}
-          className="lobby-main-btn"
+          className="lobby-mode-card primary"
         >
-          {loadingRL ? '시작 중...' : '로그라이크 모드'}
+          <span className="lobby-mode-chip">RECOMMENDED</span>
+          <strong className="lobby-mode-title">{loadingRL ? '시작 중...' : '로그라이크 원정'}</strong>
+          <span className="lobby-mode-desc">층별 보상 선택이 있는 고밀도 전투 루프</span>
+          <span className="lobby-mode-meta">10층 · 약 5분 · 보상 시스템</span>
         </button>
-        <span className="lobby-caption">
-          10층 던전 크롤링 (~5분)
-        </span>
 
-        <div className="lobby-secondary-wrap">
-          <button
-            onClick={handleDemo}
-            disabled={loading || loadingRL}
-            className="lobby-sub-btn"
-          >
-            {loading ? '시작 중...' : '클래식 데모'}
-          </button>
-          <div className="lobby-secondary-caption">
-            기존 10분 시연 모드
-          </div>
-        </div>
-        {error && (
-          <span className="lobby-error">{error}</span>
-        )}
+        <button
+          onClick={handleDemo}
+          disabled={loading || loadingRL}
+          className="lobby-mode-card secondary"
+        >
+          <span className="lobby-mode-chip">CLASSIC</span>
+          <strong className="lobby-mode-title">{loading ? '시작 중...' : '클래식 데모'}</strong>
+          <span className="lobby-mode-desc">기본 TRPG 흐름을 확인하는 시네마틱 데모</span>
+          <span className="lobby-mode-meta">약 10분 · 스토리 중심</span>
+        </button>
       </div>
+
+      {error && (
+        <span className="lobby-error">{error}</span>
+      )}
     </div>
   );
 }

@@ -71,7 +71,7 @@ export default function LivePage() {
   }
 
   return (
-    <div>
+    <div className="live-page">
       {isLobby ? (
         <LobbyView state={state} />
       ) : (
@@ -103,27 +103,20 @@ export default function LivePage() {
             {isRoguelike ? (
               <CharacterPanel state={state} />
             ) : (
-              /* Classic mode: Token HP list */
-              <div style={{
-                background: '#16213e', borderRadius: 8, padding: 12,
-                fontSize: 13, flex: 1, overflow: 'auto',
-              }}>
-                <div style={{ color: '#aaa', marginBottom: 8 }}>Party Status</div>
+              <div className="party-panel">
+                <div className="party-panel-title">Party Status</div>
                 {state.map.mapState?.tokens
                   .filter(t => t.kind === 'player' || t.kind === 'npc')
                   .map(t => (
-                    <div key={t.id} style={{
-                      display: 'flex', justifyContent: 'space-between',
-                      marginBottom: 4, padding: '2px 4px',
-                      borderRadius: 4, background: 'rgba(255,255,255,0.03)',
-                    }}>
-                      <span style={{ color: t.kind === 'player' ? '#4ecdc4' : '#ffe66d' }}>
+                    <div
+                      key={t.id}
+                      className={`party-row ${t.hp <= 0 ? 'dead' : ''} ${t.kind === 'player' ? 'ally' : 'npc'}`}
+                    >
+                      <span className="party-name">
                         {t.name}
                       </span>
-                      <span>
-                        <span style={{
-                          color: t.hp <= 0 ? '#e94560' : t.hp < t.hpMax * 0.3 ? '#ffe66d' : '#4ecdc4',
-                        }}>
+                      <span className="party-hp">
+                        <span className={`party-hp-current ${t.hp <= 0 ? 'dead' : t.hp < t.hpMax * 0.3 ? 'warn' : 'ok'}`}>
                           {t.hp}
                         </span>
                         /{t.hpMax}
@@ -131,18 +124,17 @@ export default function LivePage() {
                     </div>
                   ))}
 
-                <div style={{ color: '#aaa', marginTop: 12, marginBottom: 8 }}>Enemies</div>
+                <div className="party-panel-divider">Enemies</div>
                 {state.map.mapState?.tokens
                   .filter(t => t.kind === 'enemy')
                   .map(t => (
-                    <div key={t.id} style={{
-                      display: 'flex', justifyContent: 'space-between',
-                      marginBottom: 4, padding: '2px 4px',
-                      borderRadius: 4, background: 'rgba(255,255,255,0.03)',
-                    }}>
-                      <span style={{ color: '#e94560' }}>{t.name}</span>
-                      <span style={{ color: t.hp <= 0 ? '#555' : '#e94560' }}>
-                        {t.hp}/{t.hpMax}
+                    <div key={t.id} className={`party-row enemy ${t.hp <= 0 ? 'dead' : ''}`}>
+                      <span className="party-name">{t.name}</span>
+                      <span className="party-hp">
+                        <span className={`party-hp-current ${t.hp <= 0 ? 'dead' : 'enemy'}`}>
+                          {t.hp}
+                        </span>
+                        /{t.hpMax}
                       </span>
                     </div>
                   ))}

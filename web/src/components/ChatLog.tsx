@@ -36,7 +36,7 @@ export default function ChatLog({ state }: Props) {
           );
         }
         return (
-          <div key={msg.messageId} className="chat-msg">
+          <div key={msg.messageId} className={`chat-msg chat-msg-${msg.speaker.type.toLowerCase()}`}>
             <span className={`chat-speaker ${msg.speaker.type}`}>
               {msg.speaker.name}
             </span>

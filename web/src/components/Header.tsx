@@ -44,7 +44,11 @@ export default function Header({ state, elapsed, volume, muted, onVolumeChange, 
         {combat.active && (
           <span className="header-round">
             Round {combat.round}
-            {combat.currentActor && ` - ${combat.currentActor.name}`}
+            {combat.currentActor && (
+              <span className="header-actor">
+                {' '}· {combat.currentActor.name}
+              </span>
+            )}
           </span>
         )}
         <span className={`header-timer ${session.state === 'ENDING' ? 'danger' : ''}`}>

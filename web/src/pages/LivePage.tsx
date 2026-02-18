@@ -15,6 +15,8 @@ import RunEndScreen from '../components/RunEndScreen';
 import type { GameEvent } from '../state/types';
 import { Link } from 'react-router-dom';
 
+const ANIMATION_STALE_THRESHOLD_MS = 2000;
+
 export default function LivePage() {
   const { state, applyEvent, stateRef } = useGameState();
   const { playSoundForEvent, resetTracking, volume, muted, setVolume, toggleMuted } = useSoundEngine();
@@ -30,13 +32,16 @@ export default function LivePage() {
     sseRef.current = connectSse(fromSeq, (ev: GameEvent) => {
       playSoundForEvent(ev);
 
-      // 토큰 위치 맵 생성
-      const tokenPositions = new Map<string, { x: number; y: number }>();
-      stateRef.current.map.mapState?.tokens.forEach(t => {
-        tokenPositions.set(t.id, { x: t.x, y: t.y });
-      });
+      // Catch-up 구간의 과거 이벤트는 애니메이션을 건너뛰어 UI 멈춤을 방지한다.
+      const isStaleAnimationEvent = Date.now() - ev.t > ANIMATION_STALE_THRESHOLD_MS;
+      if (!isStaleAnimationEvent) {
+        const tokenPositions = new Map<string, { x: number; y: number }>();
+        stateRef.current.map.mapState?.tokens.forEach(t => {
+          tokenPositions.set(t.id, { x: t.x, y: t.y });
+        });
 
-      addAnimationFromEvent(ev, tokenPositions); // 애니메이션 트리거
+        addAnimationFromEvent(ev, tokenPositions); // 애니메이션 트리거
+      }
       applyEvent(ev);
     }, () => {
       // Reconnect on error

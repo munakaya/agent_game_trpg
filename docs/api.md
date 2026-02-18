@@ -31,6 +31,8 @@
 - `GET /api/session/current/stream?fromSeq={lastSeq+1}`
 - 응답: SSE `data:`에 이벤트 JSON을 1개씩 전송
 - 클라이언트는 마지막 처리 seq를 기억하고, 끊기면 재연결.
+- 대량 누락 구간(기본 500개 초과)에서는 서버가 catch-up을 압축해 `anchor + recent tail`만 전송한다.
+  - 기본값: `SSE_CATCHUP_LIMIT=500`, `SSE_BOOTSTRAP_TAIL=120`
 
 ## 3) 에이전트(WebSocket)
 

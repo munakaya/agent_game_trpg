@@ -42,10 +42,35 @@ export class AnimationManager {
   private readonly MAX_ELEMENTAL_PARTICLES = 20; // 동시 속성 파티클 제한
   private readonly MAX_SLASH_EFFECTS = 5; // 동시 슬래시 이펙트 제한
   private readonly MAX_IMPACT_EFFECTS = 5; // 동시 임팩트 이펙트 제한
+  private readonly timers = new Set<ReturnType<typeof setTimeout>>();
+  private playbackTimer: ReturnType<typeof setTimeout> | null = null;
+  private disposed = false;
 
   constructor(callback?: AnimationCallback, cellSize = 42) {
     this.callback = callback;
     this.cellSize = cellSize;
+  }
+
+  private schedule(fn: () => void, delayMs: number): ReturnType<typeof setTimeout> {
+    const id = setTimeout(() => {
+      this.timers.delete(id);
+      if (this.disposed) return;
+      fn();
+    }, delayMs);
+    this.timers.add(id);
+    return id;
+  }
+
+  private clearAllTimers(): void {
+    if (this.playbackTimer) {
+      clearTimeout(this.playbackTimer);
+      this.timers.delete(this.playbackTimer);
+      this.playbackTimer = null;
+    }
+    for (const id of this.timers) {
+      clearTimeout(id);
+    }
+    this.timers.clear();
   }
 
   /**
@@ -54,6 +79,7 @@ export class AnimationManager {
    * @param tokenPositions 현재 토큰 위치 맵 (tokenId -> {x, y})
    */
   addAnimationFromEvent(event: GameEvent, tokenPositions?: Map<string, { x: number; y: number }>): void {
+    if (this.disposed) return;
     if (tokenPositions) {
       this.tokenPositions = tokenPositions;
     }
@@ -236,7 +262,9 @@ export class AnimationManager {
   /**
    * 애니메이션 큐의 다음 항목을 재생
    */
-  private async playNext(): Promise<void> {
+  private playNext(): void {
+    if (this.disposed) return;
+
     // 큐가 너무 길면 일부 스킵 (성능 최적화)
     if (this.queue.length > this.MAX_CONCURRENT_ANIMATIONS) {
       // 오래된 애니메이션 중 일부를 즉시 완료 처리
@@ -256,21 +284,19 @@ export class AnimationManager {
     this.activeAnimations.set(anim.tokenId, anim);
     this.notifyCallback();
 
-    // 애니메이션 재생 대기
-    await new Promise((resolve) => setTimeout(resolve, anim.duration || 300));
-
-    // 애니메이션 제거
-    this.activeAnimations.delete(anim.tokenId);
-    this.notifyCallback();
-
-    // 다음 애니메이션 재생
-    this.playNext();
+    this.playbackTimer = this.schedule(() => {
+      this.playbackTimer = null;
+      this.activeAnimations.delete(anim.tokenId);
+      this.notifyCallback();
+      this.playNext();
+    }, anim.duration || 300);
   }
 
   /**
    * 콜백 호출 (상태 업데이트용)
    */
   private notifyCallback(): void {
+    if (this.disposed) return;
     if (this.callback) {
       this.callback(
         new Map(this.activeAnimations),
@@ -295,7 +321,7 @@ export class AnimationManager {
     this.notifyCallback();
 
     // 150ms 후 shake 해제
-    setTimeout(() => {
+    this.schedule(() => {
       this.shouldShake = false;
       this.notifyCallback();
     }, 150);
@@ -308,7 +334,7 @@ export class AnimationManager {
     this.isHitStop = true;
     this.notifyCallback();
 
-    setTimeout(() => {
+    this.schedule(() => {
       this.isHitStop = false;
       this.notifyCallback();
     }, duration);
@@ -323,7 +349,7 @@ export class AnimationManager {
     this.notifyCallback();
 
     // Zoom out (smooth)
-    setTimeout(() => {
+    this.schedule(() => {
       this.cameraEffect.zoom = 1.0;
       this.notifyCallback();
     }, 100);
@@ -336,7 +362,7 @@ export class AnimationManager {
     this.cameraEffect.chromaticAberration = strength;
     this.notifyCallback();
 
-    setTimeout(() => {
+    this.schedule(() => {
       this.cameraEffect.chromaticAberration = 0;
       this.notifyCallback();
     }, duration);
@@ -349,7 +375,7 @@ export class AnimationManager {
     this.cameraEffect.blur = strength;
     this.notifyCallback();
 
-    setTimeout(() => {
+    this.schedule(() => {
       this.cameraEffect.blur = 0;
       this.notifyCallback();
     }, duration);
@@ -369,7 +395,7 @@ export class AnimationManager {
     this.notifyCallback();
 
     // 250ms 후 제거
-    setTimeout(() => {
+    this.schedule(() => {
       this.projectiles = this.projectiles.filter(p => p.id !== id);
       this.notifyCallback();
     }, 250);
@@ -396,7 +422,7 @@ export class AnimationManager {
       this.particles.push({ id, x, y, type, offsetX, offsetY });
 
       // 800ms 후 제거
-      setTimeout(() => {
+      this.schedule(() => {
         this.particles = this.particles.filter(p => p.id !== id);
         this.notifyCallback();
       }, 800);
@@ -426,7 +452,7 @@ export class AnimationManager {
       this.elementalParticles.push({ id, x, y, type, offsetX, offsetY });
 
       // 600ms 후 제거
-      setTimeout(() => {
+      this.schedule(() => {
         this.elementalParticles = this.elementalParticles.filter(p => p.id !== id);
         this.notifyCallback();
       }, 600);
@@ -450,7 +476,7 @@ export class AnimationManager {
     this.notifyCallback();
 
     // 600ms 후 제거
-    setTimeout(() => {
+    this.schedule(() => {
       this.damageNumbers = this.damageNumbers.filter(d => d.id !== id);
       this.notifyCallback();
     }, 600);
@@ -469,7 +495,7 @@ export class AnimationManager {
     this.notifyCallback();
 
     // 300ms 후 제거
-    setTimeout(() => {
+    this.schedule(() => {
       this.slashEffects = this.slashEffects.filter(s => s.id !== id);
       this.notifyCallback();
     }, 300);
@@ -489,7 +515,7 @@ export class AnimationManager {
 
     // 300ms (normal) 또는 400ms (critical) 후 제거
     const duration = intensity === 'critical' ? 400 : 300;
-    setTimeout(() => {
+    this.schedule(() => {
       this.impactEffects = this.impactEffects.filter(i => i.id !== id);
       this.notifyCallback();
     }, duration);
@@ -506,6 +532,7 @@ export class AnimationManager {
    * 애니메이션 큐 초기화
    */
   clear(): void {
+    this.clearAllTimers();
     this.queue = [];
     this.activeAnimations.clear();
     this.damageNumbers = [];
@@ -518,6 +545,23 @@ export class AnimationManager {
     this.isHitStop = false;
     this.isPlaying = false;
     this.notifyCallback();
+  }
+
+  dispose(): void {
+    this.disposed = true;
+    this.callback = undefined;
+    this.clearAllTimers();
+    this.queue = [];
+    this.activeAnimations.clear();
+    this.damageNumbers = [];
+    this.projectiles = [];
+    this.particles = [];
+    this.elementalParticles = [];
+    this.slashEffects = [];
+    this.impactEffects = [];
+    this.cameraEffect = {};
+    this.isHitStop = false;
+    this.isPlaying = false;
   }
 
   /**

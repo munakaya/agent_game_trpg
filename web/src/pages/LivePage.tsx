@@ -23,6 +23,7 @@ export default function LivePage() {
   const { playSoundForEvent, resetTracking, volume, muted, setVolume, toggleMuted } = useSoundEngine();
   const { activeAnimations, damageNumbers, projectiles, particles, elementalParticles, slashEffects, impactEffects, cameraEffect, shouldShake, isHitStop, addAnimationFromEvent, clear: clearAnimations } = useAnimationQueue();
   const sseRef = useRef<{ close: () => void } | null>(null);
+  const mountedRef = useRef(false);
   const [elapsed, setElapsed] = useState(0);
 
   const connect = useCallback(() => {
@@ -45,14 +46,20 @@ export default function LivePage() {
       }
       applyEvent(ev);
     }, () => {
-      // Reconnect on error
-      setTimeout(() => connect(), 2000);
+      // Reconnect on error (connectSse 내부에서 backoff 지연 후 호출됨)
+      if (!mountedRef.current) return;
+      connect();
     });
   }, [applyEvent, stateRef, playSoundForEvent, resetTracking, addAnimationFromEvent, clearAnimations]);
 
   useEffect(() => {
+    mountedRef.current = true;
     connect();
-    return () => sseRef.current?.close();
+    return () => {
+      mountedRef.current = false;
+      sseRef.current?.close();
+      sseRef.current = null;
+    };
   }, [connect]);
 
   // SSE가 늦거나 일시 실패해도 초기 화면이 멈추지 않게 HTTP bootstrap 폴백을 주기적으로 적용한다.

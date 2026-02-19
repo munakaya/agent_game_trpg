@@ -51,6 +51,13 @@ interface FocusMark {
   y: number;
 }
 
+function destroyChildren(container: Container): void {
+  const removed = container.removeChildren();
+  for (const child of removed) {
+    child.destroy();
+  }
+}
+
 function tileStyle(ch: string, hasExit: boolean, hasItem: boolean): { fill: number; border: number } {
   if (hasExit) return { fill: 0x0f4f2a, border: 0x2a8f55 };
   if (hasItem || ch === 'I') return { fill: 0x193428, border: 0x2a5a44 };
@@ -337,11 +344,22 @@ function MapView({
       antialias: false,
       autoDensity: true,
       backgroundAlpha: 0,
-      resolution: Math.max(1, window.devicePixelRatio || 1),
+      resolution: Math.min(2, Math.max(1, window.devicePixelRatio || 1)),
     });
 
     pixiHostRef.current.innerHTML = '';
-    pixiHostRef.current.appendChild(app.view as HTMLCanvasElement);
+    const canvas = app.view as HTMLCanvasElement;
+    const onContextLost = (e: Event) => {
+      e.preventDefault();
+      // Context loss can happen on weak GPU/memory pressure. Prevent browser default crash behavior.
+      console.warn('[Pixi] WebGL context lost');
+    };
+    const onContextRestored = () => {
+      console.info('[Pixi] WebGL context restored');
+    };
+    canvas.addEventListener('webglcontextlost', onContextLost);
+    canvas.addEventListener('webglcontextrestored', onContextRestored);
+    pixiHostRef.current.appendChild(canvas);
     appRef.current = app;
 
     const tileLayer = new Container();
@@ -351,6 +369,8 @@ function MapView({
     tokenLayerRef.current = tokenLayer;
 
     return () => {
+      canvas.removeEventListener('webglcontextlost', onContextLost);
+      canvas.removeEventListener('webglcontextrestored', onContextRestored);
       app.destroy(true, { children: true });
       appRef.current = null;
       tileLayerRef.current = null;
@@ -369,7 +389,7 @@ function MapView({
     if (!app || !tileLayer || !hasMap) return;
 
     app.renderer.resize(mapWidth, mapHeight);
-    tileLayer.removeChildren();
+    destroyChildren(tileLayer);
 
     const tiles = new Graphics();
     const decorations = new Graphics();
@@ -413,7 +433,7 @@ function MapView({
   useEffect(() => {
     const tokenLayer = tokenLayerRef.current;
     if (!tokenLayer || !hasMap) return;
-    tokenLayer.removeChildren();
+    destroyChildren(tokenLayer);
 
     for (const token of tokens) {
       const anim = animations.get(token.id);

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useGameState } from '../state/useGameState';
 import { connectSse } from '../net/sseClient';
+import { fetchCurrentBootstrap } from '../net/apiClient';
 import { useSoundEngine } from '../audio/useSoundEngine';
 import { useAnimationQueue } from '../state/animation/useAnimationQueue';
 import Header from '../components/Header';
@@ -18,7 +19,7 @@ import { Link } from 'react-router-dom';
 const ANIMATION_STALE_THRESHOLD_MS = 2000;
 
 export default function LivePage() {
-  const { state, applyEvent, stateRef } = useGameState();
+  const { state, applyEvent, applyEvents, stateRef } = useGameState();
   const { playSoundForEvent, resetTracking, volume, muted, setVolume, toggleMuted } = useSoundEngine();
   const { activeAnimations, damageNumbers, projectiles, particles, elementalParticles, slashEffects, impactEffects, cameraEffect, shouldShake, isHitStop, addAnimationFromEvent, clear: clearAnimations } = useAnimationQueue();
   const sseRef = useRef<{ close: () => void } | null>(null);
@@ -53,6 +54,38 @@ export default function LivePage() {
     connect();
     return () => sseRef.current?.close();
   }, [connect]);
+
+  // SSE가 늦거나 일시 실패해도 초기 화면이 멈추지 않게 HTTP bootstrap 폴백을 주기적으로 적용한다.
+  useEffect(() => {
+    if (state.meta.lastSeq > 0) return;
+
+    let cancelled = false;
+    let timer: number | null = null;
+
+    const runBootstrap = async () => {
+      if (cancelled || stateRef.current.meta.lastSeq > 0) return;
+      try {
+        const boot = await fetchCurrentBootstrap(80);
+        if (!boot || cancelled) return;
+        if (boot.events.length > 0 && stateRef.current.meta.lastSeq === 0) {
+          applyEvents(boot.events);
+        }
+      } catch {
+        // bootstrap failure is non-fatal; retry loop continues
+      }
+
+      if (!cancelled && stateRef.current.meta.lastSeq === 0) {
+        timer = window.setTimeout(runBootstrap, 1500);
+      }
+    };
+
+    timer = window.setTimeout(runBootstrap, 120);
+
+    return () => {
+      cancelled = true;
+      if (timer !== null) clearTimeout(timer);
+    };
+  }, [state.meta.lastSeq, applyEvents, stateRef]);
 
   // Timer
   useEffect(() => {

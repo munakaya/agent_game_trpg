@@ -521,10 +521,10 @@ validate_ai_mode() {
       return
       ;;
     LOCAL_LLM|local_llm)
-      if ! LOCAL_LLM_HOST="$(choose_value "로컬 LLM 서버 호스트" "${LOCAL_LLM_HOST_CANDIDATES:-$REQUIRED_HOST_CANDIDATES}" "${LOCAL_LLM_HOST:-127.0.0.1}" "${PREV_LOCAL_LLM_HOST}" "LLM 호스트")"; then
+      if ! LOCAL_LLM_HOST="$(choose_value "로컬 LLM 서버 호스트" "${LOCAL_LLM_HOST_CANDIDATES:-$REQUIRED_HOST_CANDIDATES}" "${PREV_LOCAL_LLM_HOST:-${LOCAL_LLM_HOST:-127.0.0.1}}" "${PREV_LOCAL_LLM_HOST}" "LLM 호스트")"; then
         exit 1
       fi
-      if ! LOCAL_LLM_PORT="$(choose_value "로컬 LLM 서버 포트" "${LOCAL_LLM_PORT_CANDIDATES:-$REQUIRED_LLM_PORT_CANDIDATES}" "${LOCAL_LLM_PORT:-9000}" "${PREV_LOCAL_LLM_PORT}" "LLM 포트")"; then
+      if ! LOCAL_LLM_PORT="$(choose_value "로컬 LLM 서버 포트" "${LOCAL_LLM_PORT_CANDIDATES:-$REQUIRED_LLM_PORT_CANDIDATES}" "${PREV_LOCAL_LLM_PORT:-${LOCAL_LLM_PORT:-9000}}" "${PREV_LOCAL_LLM_PORT}" "LLM 포트")"; then
         exit 1
       fi
       validate_port_number "$LOCAL_LLM_PORT"
@@ -624,10 +624,10 @@ validate_port_number "$APP_FIXED_PORT"
 
 cleanup_previous_run
 
-if ! APP_HOST="$(choose_value "호스트 선택 (Web/App 고정 포트: ${APP_FIXED_PORT})" "${APP_BIND_HOST_CANDIDATES:-$REQUIRED_HOST_CANDIDATES}" "${APP_BIND_HOST:-0.0.0.0}" "${PREV_APP_BIND_HOST}" "호스트 선택")"; then
+if ! APP_HOST="$(choose_value "호스트 선택 (Web/App 고정 포트: ${APP_FIXED_PORT})" "${APP_BIND_HOST_CANDIDATES:-$REQUIRED_HOST_CANDIDATES}" "${PREV_APP_BIND_HOST:-${APP_BIND_HOST:-0.0.0.0}}" "${PREV_APP_BIND_HOST}" "호스트 선택")"; then
   exit 1
 fi
-if ! APP_PORT="$(choose_value "앱 포트 선택 (고정 포트 정책)" "${APP_BIND_PORT_CANDIDATES:-$APP_FIXED_PORT}" "${APP_BIND_PORT:-$APP_FIXED_PORT}" "${PREV_APP_BIND_PORT}" "앱 포트")"; then
+if ! APP_PORT="$(choose_value "앱 포트 선택 (고정 포트 정책)" "${APP_BIND_PORT_CANDIDATES:-$APP_FIXED_PORT}" "${PREV_APP_BIND_PORT:-${APP_BIND_PORT:-$APP_FIXED_PORT}}" "${PREV_APP_BIND_PORT}" "앱 포트")"; then
   exit 1
 fi
 validate_port_number "$APP_PORT"
